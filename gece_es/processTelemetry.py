@@ -1,0 +1,90 @@
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+from px4_msgs.msg import VehicleGlobalPosition, VehicleAttitude
+import math
+import json
+import requests
+
+class ProcessTelemetry(Node):
+    def __init__(self): 
+        super().__init__('process_telemetry')
+
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
+        self.quaternion_conversion = QuaternionConversion()
+
+        self.global_position_subscriber_ = self.create_subscription(VehicleGlobalPosition, '/fmu/out/vehicle_global_position', self.global_position_callback, qos_profile)
+        self.attitude_subscriber_ = self.create_subscription(VehicleAttitude, '/fmu/out/vehicle_attitude', self.attitude_callback, qos_profile)
+        
+        self.global_position = VehicleGlobalPosition()
+        self.attitude = VehicleAttitude()
+
+        self.timer_ = self.create_timer(0.5, self.timer_callback)
+    
+    def timer_callback(self):
+        roll, pitch, yaw = self.quaternion_conversion.to_euler(self.attitude.q)
+
+        telemetry_data = {
+            "uav_team": 1,
+            "uav_longitude": self.global_position.lon,
+            "uav_latitude": self.global_position.lat,
+            "uav_altitude": self.global_position.alt_ellipsoid,
+            "uav_pitch": pitch * 180 / math.pi,
+            "uav_yaw": yaw * 180 / math.pi,
+            "uav_roll": roll * 180 / math.pi
+        }
+
+        json_data = json.dumps(telemetry_data)
+
+        try:
+            response = requests.post("localhost:8080/api/send_telemetry_data", data=json_data, headers={'Content-Type': 'application/json'})
+            self.get_logger().info(f"Data sent to /api/send_telemetry_data: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            self.get_logger().error(f"Failed to send data: {e}")
+
+    def global_position_callback(self, msg):
+        self.global_position = msg
+
+    def attitude_callback(self, msg):
+        self.attitude = msg
+        
+
+class QuaternionConversion:
+    @staticmethod
+    def to_euler(quaternion):
+        w, x, y, z = quaternion
+        roll = math.atan2(2 * (w * x + y * z), 1 - 2 * (x ** 2 + y ** 2))
+        pitch = math.asin(2 * (w * y - z * x))
+        yaw = math.atan2(2 * (w * z + x * y), 1 - 2 * (y ** 2 + z ** 2))
+        return roll, pitch, yaw
+
+    @staticmethod
+    def to_quaternion(euler):
+        roll, pitch, yaw = euler
+        cy = math.cos(yaw * 0.5)
+        sy = math.sin(yaw * 0.5)
+        cp = math.cos(pitch * 0.5)
+        sp = math.sin(pitch * 0.5)
+        cr = math.cos(roll * 0.5)
+        sr = math.sin(roll * 0.5)
+        w = cr * cp * cy + sr * sp * sy
+        x = sr * cp * cy - cr * sp * sy
+        y = cr * sp * cy + sr * cp * sy
+        z = cr * cp * sy - sr * sp * cy
+        return w, x, y, z
+
+        
+def main(args=None):
+    rclpy.init(args=args)
+    process = ProcessTelemetry()
+    rclpy.spin(process)
+    rclpy.shutdown()
+
+if __name__ == "__main__": 
+    main()
