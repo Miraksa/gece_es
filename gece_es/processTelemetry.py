@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from px4_msgs.msg import VehicleGlobalPosition, VehicleAttitude
+from px4_msgs.msg import VehicleGlobalPosition, VehicleAttitude, SensorGps
 import math
 import json
 import requests
@@ -21,9 +21,11 @@ class ProcessTelemetry(Node):
 
         self.global_position_subscriber_ = self.create_subscription(VehicleGlobalPosition, '/fmu/out/vehicle_global_position', self.global_position_callback, qos_profile)
         self.attitude_subscriber_ = self.create_subscription(VehicleAttitude, '/fmu/out/vehicle_attitude', self.attitude_callback, qos_profile)
-        
+        self.sensor_gps_subscriber_ = self.create_subscription(SensorGps, '/fmu/out/vehicle_gps', self.sensor_gps_callback, qos_profile)
+
         self.global_position = VehicleGlobalPosition()
         self.attitude = VehicleAttitude()
+        self.sensor_gps = SensorGps()
 
         self.timer_ = self.create_timer(0.5, self.timer_callback)
     
@@ -31,19 +33,33 @@ class ProcessTelemetry(Node):
         roll, pitch, yaw = self.quaternion_conversion.to_euler(self.attitude.q)
 
         telemetry_data = {
-            "uav_team": 1,
-            "uav_longitude": self.global_position.lon,
+            "team_number": 2,
             "uav_latitude": self.global_position.lat,
+            "uav_longitude": self.global_position.lon,
             "uav_altitude": self.global_position.alt_ellipsoid,
             "uav_pitch": pitch * 180 / math.pi,
             "uav_yaw": yaw * 180 / math.pi,
-            "uav_roll": roll * 180 / math.pi
+            "uav_roll": roll * 180 / math.pi,
+            "uav_speed": self.sensor_gps.vel_m_s,
+            "uav_battery": 50,
+            "uav_autonomous": 0,
+            "uav_locking": 0,
+            "target_center_x": 0,
+            "target_center_y": 0,
+            "target_width": 0,
+            "target_height": 0,
+            "gps_time": {
+                "hour": 0,
+                "minute": 0,
+                "seconds": 0,
+                "milliseconds": 0
+            }
         }
 
         json_data = json.dumps(telemetry_data)
 
         try:
-            response = requests.post("localhost:8080/api/send_telemetry_data", data=json_data, headers={'Content-Type': 'application/json'})
+            response = requests.post("http://localhost:3000/api/send_telemetry_data", data=json_data, headers={'Content-Type': 'application/json'})
             self.get_logger().info(f"Data sent to /api/send_telemetry_data: {response.status_code}")
         except requests.exceptions.RequestException as e:
             self.get_logger().error(f"Failed to send data: {e}")
@@ -54,6 +70,8 @@ class ProcessTelemetry(Node):
     def attitude_callback(self, msg):
         self.attitude = msg
         
+    def sensor_gps_callback(self, msg):
+        self.sensor_gps = msg
 
 class QuaternionConversion:
     @staticmethod
