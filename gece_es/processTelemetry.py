@@ -2,6 +2,8 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from px4_msgs.msg import VehicleGlobalPosition, VehicleAttitude, SensorGps
+from bohoso.msg import TeamTelmetry
+
 import math
 import json
 import requests
@@ -19,6 +21,11 @@ class ProcessTelemetry(Node):
 
         self.quaternion_conversion = QuaternionConversion()
 
+        self.team1_telemetry_publisher_ = self.create_publisher(TeamTelmetry, '/team1/telemetry', qos_profile)
+        self.team2_telemetry_publisher_ = self.create_publisher(TeamTelmetry, '/team2/telemetry', qos_profile)
+        self.team3_telemetry_publisher_ = self.create_publisher(TeamTelmetry, '/team3/telemetry', qos_profile)
+        self.team4_telemetry_publisher_ = self.create_publisher(TeamTelmetry, '/team4/telemetry', qos_profile)
+        
         self.global_position_subscriber_ = self.create_subscription(VehicleGlobalPosition, '/fmu/out/vehicle_global_position', self.global_position_callback, qos_profile)
         self.attitude_subscriber_ = self.create_subscription(VehicleAttitude, '/fmu/out/vehicle_attitude', self.attitude_callback, qos_profile)
         self.sensor_gps_subscriber_ = self.create_subscription(SensorGps, '/fmu/out/vehicle_gps', self.sensor_gps_callback, qos_profile)
