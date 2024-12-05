@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    total_teams = 4  # Set the number of teams here
+    total_teams = 2  # Set the number of teams here
     nodes = []
 
     for team_number in range(1, total_teams + 1):
