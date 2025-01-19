@@ -41,6 +41,18 @@ Run this to check
 ros2 topic list | grep device
 ```
 From each device, they should be able to listen to each other telemetry using requests. The requests is runnning from `processTelemetry.py` node.
-## TODO 
 
-- Make the UI for things like visual feedback, air and ground target location, and jamming area. The UI should also be able to send commands and flight mode using ros2 topic. 
+### Running ground station web app
+
+Run the app using docker compose
+```shell
+# Run rosbridge websocket for JSON API
+ros2 launch rosbridge_server rosbridge_websocket_launch.xml
+
+# Docker compose 
+docker compose up -d --build
+
+# To stop the whole container
+docker compose down -v
+
+```
