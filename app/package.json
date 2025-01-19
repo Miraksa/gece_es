@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@maptiler/3d": "^2.0.2",
     "@maptiler/sdk": "^3.0.1",
     "cra-template": "1.2.0",
+    "lil-gui": "^0.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-scripts": "5.0.1",
-    "roslib": "^1.4.1"
+    "roslib": "^1.4.1",
+    "three": "^0.172.0"
   },
   "scripts": {
     "start": "react-scripts start",
