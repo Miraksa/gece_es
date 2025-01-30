@@ -16,10 +16,10 @@ export default function Map() {
     map.current = new maptilersdk.Map({
       container: mapContainer.current,
       style: maptilersdk.MapStyle.SATELLITE,
-      center: [-7.22, 80.18],
-      zoom: 11,
+      center: [112.8447635, -7.6178413],
+      zoom: 30,
       pitch: 60,
-      maxPitch: 85,
+      maxPitch: 60,
       terrainControl: true,
       terrain: true,
       maptilerLogo: true,
@@ -43,8 +43,8 @@ export default function Map() {
 
       const guiObj = {
         heading: 0,
-        scale: 1,
-        altitude: 3000,
+        scale: 0.1,
+        altitude: 3,
         opacity: 1,
         wireframe: false,
         altitudeReference: "GROUND_LEVEL",
@@ -63,7 +63,7 @@ export default function Map() {
             altitude: guiObj.altitude,
             altitudeReference: maptiler3d.AltitudeReference.MEAN_SEA_LEVEL,
             wireframe: guiObj.wireframe,
-            lngLat: [-7.22, 80.18]
+            lngLat: [112.8447635, -7.6178413]
           }
         );
       } catch (error) {
